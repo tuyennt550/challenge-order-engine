@@ -25,10 +25,10 @@ Service Layer
     ▼
 Promotion Processor
     │
-    ├── PercentageDiscountPromotionStrategy
-    ├── VipDiscountPromotionStrategy
-    ├── CouponPromotionStrategy
-    └── Buy2Get1PromotionStrategy
+    ├── PercentageDiscountStrategy
+    ├── VipDiscountStrategy
+    ├── CouponStrategy
+    └── BuyXGetYStrategy
     │
     ▼
 Repository Layer
