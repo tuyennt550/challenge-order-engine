@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -31,6 +33,17 @@ public class Coupon {
 
     @Column(name = "expiry_date", nullable = false)
     private Instant expiryDate;
+
+    @Version
+    private Long version;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    @CreationTimestamp
+    private Instant createdAt;
+
+    @Column(name = "updated_at")
+    @UpdateTimestamp
+    private Instant updatedAt;
 
     public boolean isValid() {
         return active && expiryDate.isAfter(Instant.now());

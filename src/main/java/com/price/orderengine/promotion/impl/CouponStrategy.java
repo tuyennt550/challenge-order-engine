@@ -23,7 +23,7 @@ public class CouponStrategy implements PromotionStrategy {
                 .filter(p -> p.getType() == PromotionType.COUPON)
                 .findFirst()
                 .map(promotion -> {
-                    String couponCode = context.getRequest().getCouponCode();
+                    String couponCode = context.getCouponCode();
                     BigDecimal discount = promotion.getValue();
 
                     return PromotionResult.builder()

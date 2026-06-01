@@ -21,7 +21,7 @@ public class PromotionService {
     @Cacheable(cacheNames = "promotion-active")
     public List<PromotionConfigDTO> getActivePromotions() {
         List<Promotion> promotions = promotionRepository.findByActiveTrue();
-        return promotionMapper.toDto(promotions);
+        return List.copyOf(promotionMapper.toDto(promotions));
     }
 
     @CacheEvict(cacheNames = {

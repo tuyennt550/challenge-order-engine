@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -32,6 +34,14 @@ public class Promotion  {
     @Column(nullable = false)
     private boolean active;
 
+    @Version
+    private Long version;
+
     @Column(name = "created_at", nullable = false, updatable = false)
+    @CreationTimestamp
     private Instant createdAt;
+
+    @Column(name = "updated_at")
+    @UpdateTimestamp
+    private Instant updatedAt;
 }

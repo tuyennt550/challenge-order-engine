@@ -1,5 +1,6 @@
 package com.price.orderengine.service;
 
+import com.price.orderengine.domain.model.OrderItemModel;
 import com.price.orderengine.dto.*;
 import com.price.orderengine.entity.Coupon;
 import com.price.orderengine.entity.Product;
@@ -17,7 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -33,6 +33,10 @@ public class OrderPricingService {
 
     public CalculateOrderResponse calculate(CalculateOrderRequest request) {
         Map<String, Product> productMap = validateProducts(request);
+        List<OrderItemModel> items = request.getItems().stream()
+                .map(item -> toDomainItem(item, productMap))
+                .toList();
+
         BigDecimal subtotal = calculateSubtotal(request, productMap);
 
         /*
@@ -64,7 +68,9 @@ public class OrderPricingService {
          * Apply normal promotions
          */
         PromotionContext context = PromotionContext.builder()
-                .request(request)
+                .customerType(request.getCustomerType())
+                .items(items)
+                .couponCode(request.getCouponCode())
                 .promotions(promotions)
                 .subtotal(subtotal)
                 .build();
@@ -121,5 +127,15 @@ public class OrderPricingService {
                 return product.getPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
             })
             .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private OrderItemModel toDomainItem(OrderItemRequest request, Map<String, Product> productMap) {
+        Product product = productMap.get(request.getSku());
+
+        return OrderItemModel.builder()
+                .sku(request.getSku())
+                .price(product.getPrice())
+                .quantity(request.getQuantity())
+                .build();
     }
 }

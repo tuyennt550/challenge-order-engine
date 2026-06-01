@@ -20,8 +20,7 @@ public class VipDiscountStrategy implements PromotionStrategy {
 
     @Override
     public PromotionResult apply(PromotionContext context) {
-        if (!CustomerType.VIP.toString()
-                .equalsIgnoreCase(context.getRequest().getCustomerType())) {
+        if (context.getCustomerType() != CustomerType.VIP) {
             return PromotionResult.empty();
         }
 
@@ -29,10 +28,6 @@ public class VipDiscountStrategy implements PromotionStrategy {
                 .filter(p -> p.getType() == PromotionType.VIP_DISCOUNT)
                 .findFirst()
                 .map(promotion -> {
-                    String customerType =
-                            context.getRequest()
-                                    .getCustomerType();
-
                     BigDecimal percentage = promotion.getValue();
                     BigDecimal discount = context.getSubtotal().multiply(percentage.divide(BigDecimal.valueOf(100)));
 

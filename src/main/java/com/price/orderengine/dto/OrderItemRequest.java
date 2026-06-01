@@ -1,8 +1,6 @@
 package com.price.orderengine.dto;
 
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.*;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -17,8 +15,11 @@ public class OrderItemRequest {
     private String sku;
 
     @NotNull
+    @DecimalMin(value = "0.0", inclusive = true)
+    @Digits(integer = 19, fraction = 2)
     private BigDecimal price;
 
+    @NotNull
     @Min(1)
     private Integer quantity;
 }

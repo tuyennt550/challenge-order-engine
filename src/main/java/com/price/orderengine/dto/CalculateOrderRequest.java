@@ -1,7 +1,9 @@
 package com.price.orderengine.dto;
 
+import com.price.orderengine.enums.CustomerType;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.util.List;
@@ -12,7 +14,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CalculateOrderRequest {
-    private String customerType;
+    @NotNull
+    private CustomerType customerType;
 
     @NotEmpty
     private List<@Valid OrderItemRequest> items;
