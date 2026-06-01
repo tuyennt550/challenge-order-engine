@@ -14,7 +14,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PromotionChainBuilder {
     private final List<PromotionStrategy> strategies;
-    private final List<PromotionHandler> handlers;
     private final PromotionChainProperties properties;
 
     public PromotionHandler build() {

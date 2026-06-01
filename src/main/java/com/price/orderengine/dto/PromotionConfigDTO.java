@@ -1,10 +1,7 @@
 package com.price.orderengine.dto;
 
 import com.price.orderengine.enums.PromotionType;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.math.BigDecimal;
 
@@ -12,6 +9,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @Getter
 @Setter
+@Builder
 public class PromotionConfigDTO {
     private PromotionType type;
     private BigDecimal value;

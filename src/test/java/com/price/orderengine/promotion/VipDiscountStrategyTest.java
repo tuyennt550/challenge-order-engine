@@ -1,5 +1,6 @@
 package com.price.orderengine.promotion;
 
+import com.price.orderengine.domain.model.OrderItemModel;
 import com.price.orderengine.dto.CalculateOrderRequest;
 import com.price.orderengine.dto.PromotionConfigDTO;
 import com.price.orderengine.enums.CustomerType;
@@ -18,21 +19,17 @@ public class VipDiscountStrategyTest {
 
     @Test
     void should_apply_vip_discount() {
-        PromotionConfigDTO promo = new PromotionConfigDTO(
-                PromotionType.VIP_DISCOUNT,
-                new BigDecimal("5"),
-                true
-        );
-
-        CalculateOrderRequest request = CalculateOrderRequest.builder()
-                .customerType(CustomerType.VIP.toString())
-                .build();
+        PromotionConfigDTO promo = PromotionTestHelper.promotion(PromotionType.VIP_DISCOUNT, 5);
 
         PromotionContext ctx = PromotionTestHelper.createContext(
-                new BigDecimal("200"),
-                List.of(promo),
-                request
-        );
+                        CustomerType.VIP,
+                        List.of(
+                                PromotionTestHelper.item("A100", 100, 2)
+                        ),
+                        null,
+                        BigDecimal.valueOf(200),
+                        List.of(promo)
+                );
 
         PromotionResult result = strategy.apply(ctx);
 
@@ -42,20 +39,16 @@ public class VipDiscountStrategyTest {
 
     @Test
     void should_not_apply_if_not_vip() {
-        PromotionConfigDTO promo = new PromotionConfigDTO(
-                PromotionType.VIP_DISCOUNT,
-                new BigDecimal("5"),
-                true
-        );
-
-        CalculateOrderRequest request = CalculateOrderRequest.builder()
-                .customerType(CustomerType.REGULAR.toString())
-                .build();
+        PromotionConfigDTO promo = PromotionTestHelper.promotion(PromotionType.VIP_DISCOUNT, 5);
 
         PromotionContext ctx = PromotionTestHelper.createContext(
-                new BigDecimal("200"),
-                List.of(promo),
-                request
+                CustomerType.REGULAR,
+                List.of(
+                        PromotionTestHelper.item("A100", 100, 2)
+                ),
+                null,
+                BigDecimal.valueOf(200),
+                List.of(promo)
         );
 
         PromotionResult result = strategy.apply(ctx);

@@ -1,7 +1,16 @@
 package com.price.orderengine.promotion;
 
+import com.price.orderengine.domain.model.OrderItemModel;
 import com.price.orderengine.dto.CalculateOrderRequest;
+import com.price.orderengine.dto.PromotionConfigDTO;
+import com.price.orderengine.entity.Coupon;
+import com.price.orderengine.entity.Product;
+import com.price.orderengine.enums.CustomerType;
 import com.price.orderengine.enums.PromotionType;
+import com.price.orderengine.promotion.impl.BuyXGetYStrategy;
+import com.price.orderengine.promotion.impl.CouponStrategy;
+import com.price.orderengine.promotion.impl.PercentageDiscountStrategy;
+import com.price.orderengine.promotion.impl.VipDiscountStrategy;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -12,82 +21,71 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class PromotionEngineOrderTest {
     @Test
-    void should_execute_strategies_in_enum_order() {
+    void shouldExecuteEntirePipeline() {
 
-        List<String> executionOrder = new ArrayList<>();
+        PromotionHandler percentage =
+                new StrategyPromotionHandler(
+                        new PercentageDiscountStrategy());
 
-        PromotionStrategy vip = new PromotionStrategy() {
-            @Override
-            public PromotionType getType() {
-                return PromotionType.VIP_DISCOUNT;
-            }
+        PromotionHandler vip =
+                new StrategyPromotionHandler(
+                        new VipDiscountStrategy());
 
-            @Override
-            public PromotionResult apply(PromotionContext context) {
-                executionOrder.add("VIP");
-                return PromotionResult.empty();
-            }
-        };
+        PromotionHandler coupon =
+                new StrategyPromotionHandler(
+                        new CouponStrategy());
 
-        PromotionStrategy percent = new PromotionStrategy() {
-            @Override
-            public PromotionType getType() {
-                return PromotionType.PERCENTAGE_DISCOUNT;
-            }
+        PromotionHandler buyXGetY =
+                new StrategyPromotionHandler(
+                        new BuyXGetYStrategy());
 
-            @Override
-            public PromotionResult apply(PromotionContext context) {
-                executionOrder.add("PERCENT");
-                return PromotionResult.empty();
-            }
-        };
+        percentage.setNext(vip);
+        vip.setNext(coupon);
+        coupon.setNext(buyXGetY);
 
-        PromotionStrategy coupon = new PromotionStrategy() {
-            @Override
-            public PromotionType getType() {
-                return PromotionType.COUPON;
-            }
-
-            @Override
-            public PromotionResult apply(PromotionContext context) {
-                executionOrder.add("COUPON");
-                return PromotionResult.empty();
-            }
-        };
-
-        PromotionStrategy buyX = new PromotionStrategy() {
-            @Override
-            public PromotionType getType() {
-                return PromotionType.BUY_2_GET_1_FREE;
-            }
-
-            @Override
-            public PromotionResult apply(PromotionContext context) {
-                executionOrder.add("BUY_X");
-                return PromotionResult.empty();
-            }
-        };
-
-        PromotionEngine engine = new PromotionEngine(
-                List.of(coupon, vip, buyX, percent) // intentionally shuffled
-        );
-
-        PromotionContext ctx = PromotionContext.builder()
-                .request(CalculateOrderRequest.builder().build())
-                .promotions(List.of())
-                .subtotal(new BigDecimal("100"))
+        Coupon couponEntity = Coupon.builder()
+                .code("SUMMER10")
+                .discountAmount(BigDecimal.valueOf(10))
                 .build();
 
-        engine.execute(ctx);
+        PromotionContext context = PromotionContext.builder()
+                .customerType(CustomerType.VIP)
+                .subtotal(BigDecimal.valueOf(250))
+                .coupon(couponEntity)
+                .items(List.of(
+                        OrderItemModel.builder()
+                                .sku("A100")
+                                .price(BigDecimal.valueOf(100))
+                                .quantity(2)
+                                .build()
+                ))
+                .promotions(List.of(
+                        new PromotionConfigDTO(
+                                PromotionType.PERCENTAGE_DISCOUNT,
+                                BigDecimal.TEN,
+                                true
+                        ),
+                        new PromotionConfigDTO(
+                                PromotionType.VIP_DISCOUNT,
+                                BigDecimal.valueOf(5),
+                                true
+                        ),
+                        new PromotionConfigDTO(
+                                PromotionType.BUY_2_GET_1_FREE,
+                                BigDecimal.valueOf(2),
+                                true
+                        )
+                ))
+                .build();
+
+        PromotionResult result = percentage.handle(context);
+
+        assertEquals(4, result.getAppliedPromotions().size());
 
         assertEquals(
-                List.of(
-                        "PERCENT",   // PERCENTAGE_DISCOUNT (ordinal 0)
-                        "VIP",       // VIP_DISCOUNT
-                        "COUPON",    // COUPON
-                        "BUY_X"      // BUY_2_GET_1_FREE
-                ),
-                executionOrder
+                0,
+                BigDecimal.valueOf(147.5)
+                        .compareTo(result.getDiscount())
         );
     }
 }
