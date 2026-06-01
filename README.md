@@ -267,22 +267,10 @@ Schema changes are managed using Liquibase migrations for versioned and repeatab
 - Docker
 - Docker Compose
 
-## Start Database
-
-```bash
-docker compose up -d
-```
-
-## Build
-
-```bash
-mvn clean install
-```
-
 ## Run Application
 
 ```bash
-mvn spring-boot:run
+docker compose up --build
 ```
 
 Application:

@@ -32,13 +32,12 @@ spring:
 
   data:
     redis:
-      host: ${SPRING_REDIS_HOST:localhost}
-      port: ${SPRING_REDIS_PORT:6379}
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
 
-  spring:
-    cache:
-      redis:
-        time-to-live: 10m
+  cache:
+    redis:
+      time-to-live: 10m
 
 server:
   port: 8080
