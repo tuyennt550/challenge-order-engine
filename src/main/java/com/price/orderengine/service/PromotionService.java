@@ -27,22 +27,8 @@ public class PromotionService {
     @CacheEvict(cacheNames = {
             "promotion-active"
     }, allEntries = true)
-    public Promotion updatePromotion(Promotion promotion) {
-        return promotionRepository.save(promotion);
-    }
-
-    @CacheEvict(cacheNames = {
-            "promotion-active"
-    }, allEntries = true)
     public Promotion createPromotion(Promotion promotion) {
         return promotionRepository.save(promotion);
-    }
-
-    @CacheEvict(cacheNames = {
-            "promotion-active"
-    }, allEntries = true)
-    public void deletePromotion(UUID id) {
-        promotionRepository.deleteById(id);
     }
 
 }
