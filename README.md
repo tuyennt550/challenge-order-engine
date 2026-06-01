@@ -18,23 +18,18 @@ Pricing systems evolve over time as new promotion types are introduced, making t
 
 ```text
 Controller
-    │
-    ▼
-Service Layer
-    │
-    ▼
-Promotion Processor
-    │
-    ├── PercentageDiscountStrategy
-    ├── VipDiscountStrategy
-    ├── CouponStrategy
-    └── BuyXGetYStrategy
-    │
-    ▼
-Repository Layer
-    │
-    ▼
-PostgreSQL
+    ↓
+Service
+    ↓
+Promotion Engine
+    ↓
+Promotion Chain
+    ↓
+Promotion Strategies
+    ↓
+Repository
+    ↓
+Database
 ```
 
 ### Responsibilities
@@ -82,29 +77,47 @@ New promotion types can be added without modifying existing implementations.
 
 ## Chain of Responsibility Pattern
 
-Promotions are executed sequentially through a promotion pipeline.
+Promotion execution is implemented as a configurable promotion pipeline.
 
+Each promotion handler wraps a strategy and delegates processing to the next handler.
+```text
+Percentage Discount
+        ↓
+VIP Discount
+        ↓
+Coupon
+        ↓
+Buy X Get Y
+```
+
+Handler contract:
 ```java
-public PromotionResult execute(PromotionContext context) {
-    List<PromotionStrategy> sorted = strategies.stream()
-            .sorted(Comparator.comparingInt(s -> s.getType().ordinal()))
-            .toList();
-
-    BigDecimal totalDiscount = BigDecimal.ZERO;
-    List<AppliedPromotionDTO> allApplied = new ArrayList<>();
-
-    for (PromotionStrategy strategy : sorted) {
-        PromotionResult result = strategy.apply(context);
-
-        totalDiscount = totalDiscount.add(result.getDiscount());
-        allApplied.addAll(result.getAppliedPromotions());
-    }
-    return PromotionResult.builder()
-            .discount(totalDiscount)
-            .appliedPromotions(allApplied)
-            .build();
+public interface PromotionHandler {
+    String getType();
+    void setNext(PromotionHandler next);
+    PromotionResult handle(PromotionContext context);
 }
 ```
+
+Chain construction:
+
+```java
+PromotionChainBuilder
+```
+
+Chain execution:
+
+```java
+PromotionEngine
+```
+
+Benefits:
+
+- True promotion pipeline
+- Flexible execution order
+- Easy insertion of new promotion stages
+
+---
 
 ### Location
 
@@ -114,6 +127,25 @@ public PromotionResult execute(PromotionContext context) {
 
 Allows multiple independent promotion rules to be combined while keeping them loosely coupled.
 
+# Configurable Promotion Pipeline
+
+Promotion order is externally configured.
+
+Example:
+
+```yaml
+promotion:
+  chain:
+    order:
+      - PERCENTAGE_DISCOUNT
+      - VIP_DISCOUNT
+      - COUPON
+      - BUY_2_GET_1_FREE
+```
+
+The chain is built dynamically during application startup.
+
+This allows promotion ordering changes without code modifications.
 ---
 
 # 4. SOLID Principles
