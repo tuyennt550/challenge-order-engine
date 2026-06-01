@@ -12,9 +12,10 @@ import java.util.List;
 
 @Component
 public class PercentageDiscountStrategy implements PromotionStrategy {
+
     @Override
-    public PromotionType getType() {
-        return PromotionType.PERCENTAGE_DISCOUNT;
+    public String getType() {
+        return PromotionType.PERCENTAGE_DISCOUNT.name();
     }
 
     @Override

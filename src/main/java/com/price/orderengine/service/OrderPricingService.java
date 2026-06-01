@@ -42,13 +42,14 @@ public class OrderPricingService {
         /*
          * Load active promotions
          */
-        List<PromotionConfigDTO> promotions = promotionService.getActivePromotions();
+        List<PromotionConfigDTO> activePromotions = promotionService.getActivePromotions();
 
         /*
          * Apply coupon
          */
+        Coupon coupon = null;
         if (request.getCouponCode() != null && !request.getCouponCode().isBlank()) {
-            Coupon coupon = couponRepository.findByCodeAndActiveTrue(request.getCouponCode()).orElse(null);
+            coupon = couponRepository.findByCodeAndActiveTrue(request.getCouponCode()).orElse(null);
 
             if(coupon == null) {
                 throw new DBNotFoundException(ErrorCode.COUPON_NOT_FOUND, "Coupon not found: " + request.getCouponCode());
@@ -56,12 +57,6 @@ public class OrderPricingService {
             if(!coupon.isValid()) {
                 throw new UserFriendlyException(ErrorCode.INVALID_COUPON, "Invalid coupon: " + coupon.getCode());
             }
-
-            promotions.add(new PromotionConfigDTO(
-                    PromotionType.COUPON,
-                    coupon.getDiscountAmount(),
-                    true
-            ));
         }
 
         /*
@@ -70,8 +65,8 @@ public class OrderPricingService {
         PromotionContext context = PromotionContext.builder()
                 .customerType(request.getCustomerType())
                 .items(items)
-                .couponCode(request.getCouponCode())
-                .promotions(promotions)
+                .coupon(coupon)
+                .promotions(activePromotions)
                 .subtotal(subtotal)
                 .build();
         PromotionResult discounts = promotionEngine.execute(context);

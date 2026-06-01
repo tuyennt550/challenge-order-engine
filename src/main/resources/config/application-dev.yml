@@ -45,3 +45,11 @@ server:
 logging:
   level:
     org.hibernate.SQL: debug
+
+promotion:
+  chain:
+    order:
+      - PERCENTAGE_DISCOUNT
+      - VIP_DISCOUNT
+      - COUPON
+      - BUY_2_GET_1_FREE

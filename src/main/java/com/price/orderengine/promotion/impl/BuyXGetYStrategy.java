@@ -2,8 +2,6 @@ package com.price.orderengine.promotion.impl;
 
 import com.price.orderengine.domain.model.OrderItemModel;
 import com.price.orderengine.dto.AppliedPromotionDTO;
-import com.price.orderengine.dto.OrderItemRequest;
-import com.price.orderengine.entity.OrderItem;
 import com.price.orderengine.enums.PromotionType;
 import com.price.orderengine.promotion.PromotionContext;
 import com.price.orderengine.promotion.PromotionResult;
@@ -15,9 +13,10 @@ import java.util.List;
 
 @Component
 public class BuyXGetYStrategy implements PromotionStrategy {
+
     @Override
-    public PromotionType getType() {
-        return PromotionType.BUY_2_GET_1_FREE;
+    public String getType() {
+        return PromotionType.BUY_2_GET_1_FREE.name();
     }
 
     @Override

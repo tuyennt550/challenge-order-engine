@@ -1,6 +1,7 @@
 package com.price.orderengine.promotion.impl;
 
 import com.price.orderengine.dto.AppliedPromotionDTO;
+import com.price.orderengine.entity.Coupon;
 import com.price.orderengine.enums.PromotionType;
 import com.price.orderengine.promotion.PromotionContext;
 import com.price.orderengine.promotion.PromotionResult;
@@ -12,30 +13,25 @@ import java.util.List;
 
 @Component
 public class CouponStrategy implements PromotionStrategy {
+
     @Override
-    public PromotionType getType() {
-        return PromotionType.COUPON;
+    public String getType() {
+        return PromotionType.COUPON.name();
     }
 
     @Override
     public PromotionResult apply(PromotionContext context) {
-        return context.getPromotions().stream()
-                .filter(p -> p.getType() == PromotionType.COUPON)
-                .findFirst()
-                .map(promotion -> {
-                    String couponCode = context.getCouponCode();
-                    BigDecimal discount = promotion.getValue();
+        Coupon coupon = context.getCoupon();
+        BigDecimal discount = coupon.getDiscountAmount();
 
-                    return PromotionResult.builder()
-                            .discount(discount)
-                            .appliedPromotions(List.of(
-                                    new AppliedPromotionDTO(
-                                            promotion.getType().name() + "_" + couponCode,
-                                            discount
-                                    )
-                            ))
-                            .build();
-                })
-                .orElse(PromotionResult.empty());
+        return PromotionResult.builder()
+                .discount(discount)
+                .appliedPromotions(List.of(
+                        new AppliedPromotionDTO(
+                                getType() + "_" + coupon.getCode(),
+                                discount
+                        )
+                ))
+                .build();
     }
 }

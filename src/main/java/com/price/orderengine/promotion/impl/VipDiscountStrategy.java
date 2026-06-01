@@ -13,9 +13,10 @@ import java.util.List;
 
 @Component
 public class VipDiscountStrategy implements PromotionStrategy {
+
     @Override
-    public PromotionType getType() {
-        return PromotionType.VIP_DISCOUNT;
+    public String getType() {
+        return PromotionType.VIP_DISCOUNT.name();
     }
 
     @Override
