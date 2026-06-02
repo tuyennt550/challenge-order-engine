@@ -207,6 +207,17 @@ Spring injects implementations automatically.
 ---
 
 # 5. Database Design Decisions
+## Tables Overview
+
+The system uses a normalized relational model:
+
+| Table | Description |
+|------|-------------|
+| products | Product catalog |
+| orders | Order header |
+| order_items | Order line items |
+| coupons | Discount coupons (stateful, concurrency-safe) |
+| promotions | Configurable promotion rules |
 
 ## coupons (CONCURRENCY-SAFE DESIGN)
 
