@@ -1,21 +1,23 @@
 package com.price.orderengine.integration;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.price.orderengine.dto.CalculateOrderRequest;
 import com.price.orderengine.dto.OrderItemRequest;
 import com.price.orderengine.entity.Coupon;
 import com.price.orderengine.entity.Product;
 import com.price.orderengine.enums.CustomerType;
-import com.price.orderengine.promotion.PromotionEngine;
-import com.price.orderengine.promotion.PromotionResult;
 import com.price.orderengine.repository.CouponRepository;
 import com.price.orderengine.repository.ProductRepository;
 import com.price.orderengine.service.OrderPricingService;
-import com.price.orderengine.service.PromotionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -23,15 +25,29 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureMockMvc
 @Testcontainers
-@SpringBootTest
 class OrderPricingServiceIT {
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Container
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16")
@@ -54,12 +70,6 @@ class OrderPricingServiceIT {
 
     @Autowired
     private CouponRepository couponRepository;
-
-    @Autowired
-    private PromotionService promotionService;
-
-    @Autowired
-    private PromotionEngine promotionEngine;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -91,21 +101,34 @@ class OrderPricingServiceIT {
     // 1. concurrency smoke test (no crash under load)
     // ------------------------------------------------------
     @Test
-    void should_handle_concurrent_calculations() throws Exception {
+    void should_return_correct_final_price_under_concurrency() throws Exception {
 
-        int threads = 50;
+        int threads = 20;
+
         ExecutorService executor = Executors.newFixedThreadPool(threads);
 
         CountDownLatch start = new CountDownLatch(1);
         CountDownLatch done = new CountDownLatch(threads);
 
-        CalculateOrderRequest request = buildRequest();
+        List<BigDecimal> results = Collections.synchronizedList(new ArrayList<>());
 
         for (int i = 0; i < threads; i++) {
             executor.submit(() -> {
                 try {
                     start.await();
-                    service.calculate(request);
+
+                    String response = mockMvc.perform(
+                                    post("/api/v1/orders/calculate")
+                                            .contentType(MediaType.APPLICATION_JSON)
+                                            .content(objectMapper.writeValueAsString(buildRequest()))
+                            )
+                            .andExpect(status().isOk())
+                            .andReturn()
+                            .getResponse()
+                            .getContentAsString();
+
+                    results.add(extractFinalPrice(response));
+
                 } catch (Exception ignored) {
                 } finally {
                     done.countDown();
@@ -118,15 +141,18 @@ class OrderPricingServiceIT {
 
         executor.shutdown();
 
-        // just ensure system stable
-        assertTrue(true);
+        BigDecimal expected = results.get(0);
+
+        for (BigDecimal price : results) {
+            assertEquals(expected, price);
+        }
     }
 
     // ------------------------------------------------------
     // 2. REAL race condition test (coupon usage limit)
     // ------------------------------------------------------
     @Test
-    void should_not_exceed_coupon_usage_limit_under_concurrency() throws Exception {
+    void should_not_exceed_coupon_limit_under_concurrent_requests() throws Exception {
 
         int threads = 30;
 
@@ -135,19 +161,31 @@ class OrderPricingServiceIT {
         CountDownLatch start = new CountDownLatch(1);
         CountDownLatch done = new CountDownLatch(threads);
 
-        CalculateOrderRequest request = buildRequest();
+        AtomicInteger success = new AtomicInteger();
+        AtomicInteger fail = new AtomicInteger();
 
-        IntStream.range(0, threads).forEach(i ->
-                executor.submit(() -> {
-                    try {
-                        start.await();
-                        service.calculate(request);
-                    } catch (Exception ignored) {
-                    } finally {
-                        done.countDown();
-                    }
-                })
-        );
+        for (int i = 0; i < threads; i++) {
+            executor.submit(() -> {
+                try {
+                    start.await();
+
+                    mockMvc.perform(
+                            post("/api/v1/orders/calculate")
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .content(objectMapper.writeValueAsString(buildRequest()))
+                    ).andDo(result -> {
+                        int status = result.getResponse().getStatus();
+
+                        if (status == 200) success.incrementAndGet();
+                        else fail.incrementAndGet();
+                    });
+
+                } catch (Exception ignored) {
+                } finally {
+                    done.countDown();
+                }
+            });
+        }
 
         start.countDown();
         done.await();
@@ -161,7 +199,10 @@ class OrderPricingServiceIT {
 
         System.out.println("USED COUNT = " + usedCount);
 
-        assertTrue(usedCount <= 10);
+        assertEquals(10,usedCount);
+
+        assertEquals(threads, success.get() + fail.get());
+        assertTrue(success.get() <= 10);
     }
 
     // ------------------------------------------------------
@@ -179,5 +220,10 @@ class OrderPricingServiceIT {
                                 .build()
                 ))
                 .build();
+    }
+
+    private BigDecimal extractFinalPrice(String json) throws Exception {
+        JsonNode node = objectMapper.readTree(json);
+        return new BigDecimal(node.get("finalTotal").asText());
     }
 }
