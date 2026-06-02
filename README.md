@@ -324,19 +324,21 @@ mvn test
 
 ## 8. Trade-offs and What Happens at Scale
 
-## Coupon Concurrency
-- Atomic DB update ensures safe redemption
-- Slight DB write overhead under high load
+### Coupon Concurrency
+Atomic SQL update ensures safe redemption under concurrent requests.
+Trade-off: introduces additional write load on the database under high traffic.
 
-## Promotion Engine
-- Linear execution cost based on number of rules
+### Promotion Engine
+Execution cost is linear based on the number of active promotion rules.
+Trade-off: more rules = higher computation per order calculation.
 
-## Optimistic Locking
-- May cause retry under concurrent admin updates
+### Optimistic Locking
+Prevents lost updates on concurrent administrative changes (e.g. promotions).
+In case of version conflict, updates fail and may require retry logic at application level.
 
-## Scaling Strategy
-- Stateless services
-- Horizontal scaling supported
+### Scaling Strategy
+The system is designed to be stateless, enabling horizontal scaling of service instances.
+Database becomes the main bottleneck under extreme load scenarios (especially coupon usage and order writes).
 
 ---
 
