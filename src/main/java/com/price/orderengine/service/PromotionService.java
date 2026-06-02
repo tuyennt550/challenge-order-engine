@@ -25,6 +25,7 @@ public class PromotionService implements IPromotionService {
         return promotionMapper.toDto(promotions);
     }
 
+    @Override
     @CacheEvict(cacheNames = {
             "promotion-active"
     }, allEntries = true)

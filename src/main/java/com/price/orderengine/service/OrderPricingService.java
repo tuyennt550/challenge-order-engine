@@ -12,7 +12,6 @@ import com.price.orderengine.promotion.PromotionResult;
 import com.price.orderengine.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -21,12 +20,13 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class OrderPricingService {
+public class OrderPricingService implements IOrderPricingService {
     private final ProductRepository productRepository;
     private final PromotionEngine promotionEngine;
     private final IPromotionService promotionService;
     private final ICouponService couponService;
 
+    @Override
     public CalculateOrderResponse calculate(CalculateOrderRequest request) {
         Map<String, Product> productMap = validateProducts(request);
         List<OrderItemModel> items = request.getItems().stream()

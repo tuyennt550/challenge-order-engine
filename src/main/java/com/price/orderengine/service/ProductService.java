@@ -10,9 +10,10 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class ProductService {
+public class ProductService implements IProductService {
     private final ProductRepository productRepository;
 
+    @Override
     @Cacheable(cacheNames = "product-configs")
     public List<ProductConfigDTO> getActiveProducts() {
 

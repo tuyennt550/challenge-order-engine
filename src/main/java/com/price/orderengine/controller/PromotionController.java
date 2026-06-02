@@ -5,7 +5,7 @@ import com.price.orderengine.dto.CreatePromotionRequest;
 import com.price.orderengine.dto.PromotionConfigDTO;
 import com.price.orderengine.entity.Promotion;
 import com.price.orderengine.mapper.PromotionMapper;
-import com.price.orderengine.service.PromotionService;
+import com.price.orderengine.service.IPromotionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -21,7 +21,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "Promotions")
 public class PromotionController {
-    private final PromotionService promotionService;
+    private final IPromotionService promotionService;
     private final PromotionMapper promotionMapper;
 
     @GetMapping("")

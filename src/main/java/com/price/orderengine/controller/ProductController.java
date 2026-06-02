@@ -2,7 +2,7 @@ package com.price.orderengine.controller;
 
 import com.price.orderengine.dto.ApiResponse;
 import com.price.orderengine.dto.ProductConfigDTO;
-import com.price.orderengine.service.ProductService;
+import com.price.orderengine.service.IProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "Products")
 public class ProductController {
-    private final ProductService productService;
+    private final IProductService productService;
 
     @GetMapping("")
     @Operation(summary = "Get active product configs")
