@@ -24,8 +24,8 @@ import java.util.stream.Collectors;
 public class OrderPricingService {
     private final ProductRepository productRepository;
     private final PromotionEngine promotionEngine;
-    private final PromotionService promotionService;
-    private final CouponService couponService;
+    private final IPromotionService promotionService;
+    private final ICouponService couponService;
 
     public CalculateOrderResponse calculate(CalculateOrderRequest request) {
         Map<String, Product> productMap = validateProducts(request);

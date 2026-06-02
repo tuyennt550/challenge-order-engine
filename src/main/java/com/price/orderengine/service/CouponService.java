@@ -11,9 +11,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class CouponService {
+public class CouponService implements ICouponService {
     private final CouponRepository couponRepository;
 
+    @Override
     public Coupon validateCoupon(String code) {
 
         Coupon coupon = couponRepository.findByCodeAndActiveTrue(code)
@@ -30,6 +31,7 @@ public class CouponService {
         return coupon;
     }
 
+    @Override
     @Transactional
     public Coupon reserveCoupon(String code) {
 

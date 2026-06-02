@@ -3,7 +3,6 @@ package com.price.orderengine.service;
 import com.price.orderengine.dto.CalculateOrderRequest;
 import com.price.orderengine.dto.CalculateOrderResponse;
 import com.price.orderengine.dto.OrderItemRequest;
-import com.price.orderengine.entity.Coupon;
 import com.price.orderengine.entity.Product;
 import com.price.orderengine.enums.CustomerType;
 import com.price.orderengine.errors.DBNotFoundException;
@@ -11,25 +10,15 @@ import com.price.orderengine.errors.ErrorCode;
 import com.price.orderengine.errors.UserFriendlyException;
 import com.price.orderengine.promotion.PromotionEngine;
 import com.price.orderengine.promotion.PromotionResult;
-import com.price.orderengine.repository.CouponRepository;
 import com.price.orderengine.repository.ProductRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.math.BigDecimal;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -43,19 +32,16 @@ public class OrderPricingServiceTest {
     private ProductRepository productRepository;
 
     @Mock
-    private PromotionService promotionService;
+    private IPromotionService promotionService;
 
     @Mock
     private PromotionEngine promotionEngine;
 
     @Mock
-    private CouponService couponService;
+    private ICouponService couponService;
 
     @InjectMocks
     private OrderPricingService service;
-
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
 
     @Test
     void should_throw_when_coupon_not_found() {

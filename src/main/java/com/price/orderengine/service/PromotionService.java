@@ -14,10 +14,11 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class PromotionService {
+public class PromotionService implements IPromotionService {
     private final PromotionRepository promotionRepository;
     private final PromotionMapper promotionMapper;
 
+    @Override
     @Cacheable(cacheNames = "promotion-active")
     public List<PromotionConfigDTO> getActivePromotions() {
         List<Promotion> promotions = promotionRepository.findByActiveTrue();
