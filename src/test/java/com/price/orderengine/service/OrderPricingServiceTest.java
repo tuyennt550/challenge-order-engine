@@ -177,4 +177,43 @@ public class OrderPricingServiceTest {
                         .compareTo(result.getFinalPrice())
         );
     }
+
+    @Test
+    void should_cap_final_price_at_zero_when_discount_exceeds_subtotal() {
+
+        when(productRepository.findBySkuIn(anyList()))
+                .thenReturn(List.of(
+                        Product.builder()
+                                .sku("A100")
+                                .price(BigDecimal.valueOf(100))
+                                .build()
+                ));
+
+        when(promotionService.getActivePromotions())
+                .thenReturn(List.of());
+
+        when(promotionEngine.execute(any()))
+                .thenReturn(PromotionResult.builder()
+                        .discount(BigDecimal.valueOf(500)) // > subtotal
+                        .appliedPromotions(List.of())
+                        .build());
+
+        CalculateOrderRequest request =
+                CalculateOrderRequest.builder()
+                        .customerType(CustomerType.REGULAR)
+                        .items(List.of(
+                                OrderItemRequest.builder()
+                                        .sku("A100")
+                                        .quantity(1)
+                                        .build()
+                        ))
+                        .build();
+
+        CalculateOrderResponse result = service.calculate(request);
+
+        assertEquals(
+                0,
+                BigDecimal.ZERO.compareTo(result.getFinalPrice())
+        );
+    }
 }

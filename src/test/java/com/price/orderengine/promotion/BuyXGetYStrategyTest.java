@@ -99,6 +99,87 @@ public class BuyXGetYStrategyTest {
     }
 
     @Test
+    void should_apply_buy_5_get_2_free() {
+        PromotionConfigDTO promo = PromotionTestHelper.promotion(PromotionType.BUY_2_GET_1_FREE, 2);
+
+        PromotionContext ctx = PromotionTestHelper.createContext(
+                CustomerType.REGULAR,
+                List.of(
+                        PromotionTestHelper.item("A100", 100, 5)
+                ),
+                null,
+                BigDecimal.valueOf(500),
+                List.of(promo)
+        );
+
+        PromotionResult result = strategy.apply(ctx);
+
+        // 5 items, buy 2 get 1 => 2 free item
+        // discount = 200
+
+        assertEquals(
+                0,
+                BigDecimal.valueOf(200)
+                        .compareTo(result.getDiscount())
+        );
+        assertEquals(1, ctx.getPromotions().size());
+    }
+
+    @Test
+    void should_apply_buy_6_get_3_free() {
+        PromotionConfigDTO promo = PromotionTestHelper.promotion(PromotionType.BUY_2_GET_1_FREE, 2);
+
+        PromotionContext ctx = PromotionTestHelper.createContext(
+                CustomerType.REGULAR,
+                List.of(
+                        PromotionTestHelper.item("A100", 100, 6)
+                ),
+                null,
+                BigDecimal.valueOf(600),
+                List.of(promo)
+        );
+
+        PromotionResult result = strategy.apply(ctx);
+
+        // 6 items, buy 2 get 1 => 3 free item
+        // discount = 300
+
+        assertEquals(
+                0,
+                BigDecimal.valueOf(300)
+                        .compareTo(result.getDiscount())
+        );
+        assertEquals(1, ctx.getPromotions().size());
+    }
+
+    @Test
+    void should_apply_buy_10_get_5_free() {
+        PromotionConfigDTO promo = PromotionTestHelper.promotion(PromotionType.BUY_2_GET_1_FREE, 2);
+
+        PromotionContext ctx = PromotionTestHelper.createContext(
+                CustomerType.REGULAR,
+                List.of(
+                        PromotionTestHelper.item("A100", 100, 10)
+                ),
+                null,
+                BigDecimal.valueOf(1000),
+                List.of(promo)
+        );
+
+        PromotionResult result = strategy.apply(ctx);
+
+        // 10 items, buy 2 get 1 => 5 free item
+        // discount = 500
+
+        assertEquals(
+                0,
+                BigDecimal.valueOf(500)
+                        .compareTo(result.getDiscount())
+        );
+        assertEquals(1, ctx.getPromotions().size());
+    }
+
+    @Test
     void should_not_apply_if_not_enough_quantity() {
         PromotionConfigDTO promo = PromotionTestHelper.promotion(PromotionType.BUY_2_GET_1_FREE, 2);
 
