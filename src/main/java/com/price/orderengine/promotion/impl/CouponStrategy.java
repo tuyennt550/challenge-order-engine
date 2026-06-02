@@ -20,8 +20,16 @@ public class CouponStrategy implements PromotionStrategy {
     }
 
     @Override
+    public boolean isApplicable(PromotionContext context) {
+        return context.getCoupon() != null;
+    }
+
+    @Override
     public PromotionResult apply(PromotionContext context) {
         Coupon coupon = context.getCoupon();
+
+        if (coupon == null) return PromotionResult.empty();
+
         BigDecimal discount = coupon.getDiscountAmount();
 
         return PromotionResult.builder()

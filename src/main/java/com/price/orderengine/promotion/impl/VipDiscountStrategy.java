@@ -20,6 +20,11 @@ public class VipDiscountStrategy implements PromotionStrategy {
     }
 
     @Override
+    public boolean isApplicable(PromotionContext context) {
+        return context.getCustomerType() == CustomerType.VIP;
+    }
+
+    @Override
     public PromotionResult apply(PromotionContext context) {
         if (context.getCustomerType() != CustomerType.VIP) {
             return PromotionResult.empty();

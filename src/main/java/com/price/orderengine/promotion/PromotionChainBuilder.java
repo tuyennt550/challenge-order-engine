@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 public class PromotionChainBuilder {
     private final List<PromotionStrategy> strategies;
     private final PromotionChainProperties properties;
+    private final StrategyPromotionHandlerFactory factory;
 
     public PromotionHandler build() {
 
@@ -25,13 +26,11 @@ public class PromotionChainBuilder {
                                 s -> s
                         ));
 
-        List<PromotionHandler> ordered = new ArrayList<>();
-
-        properties.getOrder().stream()
+        List<PromotionHandler> ordered = properties.getOrder().stream()
                 .map(strategyMap::get)
                 .filter(Objects::nonNull)
-                .forEach(strategy ->
-                        ordered.add(new StrategyPromotionHandler(strategy)));
+                .map(factory::create)
+                .toList();
 
         if (ordered.isEmpty()) {
             throw new IllegalStateException(

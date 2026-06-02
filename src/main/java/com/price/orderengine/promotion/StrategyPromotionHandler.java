@@ -14,8 +14,12 @@ public class StrategyPromotionHandler extends AbstractPromotionHandler {
 
     @Override
     public PromotionResult handle(PromotionContext context) {
-        PromotionResult current = strategy.apply(context);
+        if(strategy.isApplicable(context)) {
+            PromotionResult current = strategy.apply(context);
 
-        return proceed(context, current);
+            return proceed(context, current);
+        }
+        return proceed(context, PromotionResult.empty());
+
     }
 }

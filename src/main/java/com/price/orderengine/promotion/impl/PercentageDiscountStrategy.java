@@ -1,6 +1,7 @@
 package com.price.orderengine.promotion.impl;
 
 import com.price.orderengine.dto.AppliedPromotionDTO;
+import com.price.orderengine.enums.CustomerType;
 import com.price.orderengine.enums.PromotionType;
 import com.price.orderengine.promotion.PromotionContext;
 import com.price.orderengine.promotion.PromotionResult;
@@ -16,6 +17,14 @@ public class PercentageDiscountStrategy implements PromotionStrategy {
     @Override
     public String getType() {
         return PromotionType.PERCENTAGE_DISCOUNT.name();
+    }
+
+    @Override
+    public boolean isApplicable(PromotionContext context) {
+        return context.getPromotions().stream()
+                .anyMatch(p ->
+                        p.getType() == PromotionType.PERCENTAGE_DISCOUNT
+                );
     }
 
     @Override

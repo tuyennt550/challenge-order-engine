@@ -20,6 +20,18 @@ public class BuyXGetYStrategy implements PromotionStrategy {
     }
 
     @Override
+    public boolean isApplicable(PromotionContext context) {
+        int buyQuantity = context.getPromotions().stream()
+                .filter(p -> p.getType() == PromotionType.BUY_2_GET_1_FREE)
+                .map(p -> p.getValue().intValue())
+                .findFirst()
+                .orElse(2);
+
+        return context.getItems().stream()
+                .anyMatch(item -> item.getQuantity() >= buyQuantity);
+    }
+
+    @Override
     public PromotionResult apply(PromotionContext context) {
 
         return context.getPromotions().stream()
