@@ -284,7 +284,7 @@ couponService.reserveCoupon(code);
 
 ---
 
-## 7. How to Run the System
+## 6. How to Run the System
 
 ```bash
 docker compose up --build
@@ -314,7 +314,7 @@ curl http://localhost:8080/api/v1/products
 ```
 ---
 
-## 8. How to Run Tests
+## 7. How to Run Tests
 
 ```bash
 mvn test
@@ -322,7 +322,7 @@ mvn test
 
 ---
 
-## 9. Trade-offs and What Happens at Scale
+## 8. Trade-offs and What Happens at Scale
 
 ## Coupon Concurrency
 - Atomic DB update ensures safe redemption
