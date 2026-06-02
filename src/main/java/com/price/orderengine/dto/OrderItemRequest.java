@@ -14,8 +14,13 @@ public class OrderItemRequest {
     @NotBlank
     private String sku;
 
+    /**
+     * price is provided for client-side display/debugging only.
+     * It is NOT used in calculation.
+     * Server always overrides with product master price.
+     */
     @NotNull
-    @DecimalMin(value = "0.0", inclusive = true)
+    @DecimalMin(value = "0.01", inclusive = true)
     @Digits(integer = 19, fraction = 2)
     private BigDecimal price;
 
