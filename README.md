@@ -279,6 +279,28 @@ couponService.reserveCoupon(code);
 docker compose up --build
 ```
 
+OpenAPI documentation is available at http://localhost:8080/swagger-ui/index.html.
+
+Order Calculate:
+```
+curl -X POST http://localhost:8080/api/v1/orders/calculate \
+  -H "Content-Type: application/json" \
+  -d '{"customerType":"VIP","couponCode":"SUMMER10","items":[{"sku":"A100","price":100,"quantity":2},{"sku":"B200","price":50,"quantity":1}]}'
+```
+Get Promotion:
+```
+curl http://localhost:8080/api/v1/promotions
+```
+Create a Promotion
+```
+curl -X POST http://localhost:8080/api/v1/promotions \
+  -H "Content-Type: application/json" \
+  -d '{"type":"PERCENTAGE_DISCOUNT","value":10,"active":true}'
+```
+Get Products
+```
+curl http://localhost:8080/api/v1/products
+```
 ---
 
 ## 8. How to Run Tests
