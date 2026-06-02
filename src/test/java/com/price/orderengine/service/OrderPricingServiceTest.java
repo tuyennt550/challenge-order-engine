@@ -7,6 +7,7 @@ import com.price.orderengine.entity.Coupon;
 import com.price.orderengine.entity.Product;
 import com.price.orderengine.enums.CustomerType;
 import com.price.orderengine.errors.DBNotFoundException;
+import com.price.orderengine.errors.ErrorCode;
 import com.price.orderengine.errors.UserFriendlyException;
 import com.price.orderengine.promotion.PromotionEngine;
 import com.price.orderengine.promotion.PromotionResult;
@@ -17,6 +18,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -24,10 +27,13 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -37,16 +43,19 @@ public class OrderPricingServiceTest {
     private ProductRepository productRepository;
 
     @Mock
-    private CouponRepository couponRepository;
-
-    @Mock
     private PromotionService promotionService;
 
     @Mock
     private PromotionEngine promotionEngine;
 
+    @Mock
+    private CouponService couponService;
+
     @InjectMocks
     private OrderPricingService service;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @Test
     void should_throw_when_coupon_not_found() {
@@ -58,8 +67,8 @@ public class OrderPricingServiceTest {
                                 .build()
                 ));
 
-        when(couponRepository.findByCodeAndActiveTrue("SUMMER10"))
-                .thenReturn(Optional.empty());
+        when(couponService.validateCoupon("SUMMER10"))
+                .thenThrow(new DBNotFoundException(ErrorCode.COUPON_NOT_FOUND, "not found"));
 
         CalculateOrderRequest request =
                 CalculateOrderRequest.builder()
@@ -78,18 +87,13 @@ public class OrderPricingServiceTest {
                 DBNotFoundException.class,
                 () -> service.calculate(request)
         );
-        verify(couponRepository).findByCodeAndActiveTrue("SUMMER10");
     }
 
     @Test
     void should_throw_when_coupon_expired() {
 
-        Coupon coupon = Coupon.builder()
-                .code("SUMMER10")
-                .active(true)
-                .discountAmount(BigDecimal.TEN)
-                .expiryDate(Instant.now().minus(1, ChronoUnit.DAYS))
-                .build();
+        when(couponService.validateCoupon("SUMMER10"))
+                .thenThrow(new UserFriendlyException(ErrorCode.INVALID_COUPON, "not found"));
 
         when(productRepository.findBySkuIn(any()))
                 .thenReturn(List.of(
@@ -98,9 +102,6 @@ public class OrderPricingServiceTest {
                                 .price(BigDecimal.valueOf(100))
                                 .build()
                 ));
-
-        when(couponRepository.findByCodeAndActiveTrue("SUMMER10"))
-                .thenReturn(Optional.of(coupon));
 
         CalculateOrderRequest request =
                 CalculateOrderRequest.builder()

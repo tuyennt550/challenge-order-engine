@@ -34,6 +34,12 @@ public class Coupon {
     @Column(name = "expiry_date", nullable = false)
     private Instant expiryDate;
 
+    @Column(name = "usage_limit")
+    private Integer usageLimit;
+
+    @Column(name = "used_count")
+    private Integer usedCount;
+
     @Version
     private Long version;
 

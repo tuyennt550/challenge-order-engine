@@ -1,6 +1,6 @@
 # Order Pricing & Promotion Engine
 
-## 1. Challenge Chosen and Why
+# 1. Challenge Chosen and Why
 
 I chose the **Order Pricing & Promotion Engine** challenge because it combines several important backend engineering concerns:
 
@@ -8,6 +8,7 @@ I chose the **Order Pricing & Promotion Engine** challenge because it combines s
 - Pricing and promotion calculation
 - Database design
 - Extensible architecture
+- Concurrency and consistency handling
 - Testing and maintainability
 
 Pricing systems evolve over time as new promotion types are introduced, making this challenge a good opportunity to demonstrate clean architecture, SOLID principles, and extensible design patterns.
@@ -19,7 +20,9 @@ Pricing systems evolve over time as new promotion types are introduced, making t
 ```text
 Controller
     ↓
-Service
+Service (OrderPricingService)
+    ↓
+CouponService (validation + atomic reservation)
     ↓
 Promotion Engine
     ↓
@@ -35,13 +38,14 @@ Database
 ### Responsibilities
 
 | Layer | Responsibility |
-|---------|---------|
-| Controller | Handle HTTP requests/responses |
+|------|---------------|
+| Controller | HTTP request/response |
 | Service | Business orchestration |
-| Promotion Processor | Execute promotion pipeline |
-| Promotion Strategies | Individual pricing rules |
+| CouponService | Coupon validation + concurrency-safe redemption |
+| Promotion Engine | Promotion execution pipeline |
+| Strategies | Individual promotion rules |
 | Repository | Data access |
-| Entity | Database mapping |
+| Entity | Persistence model |
 
 ---
 
@@ -58,34 +62,28 @@ public interface PromotionStrategy {
 }
 ```
 
-Implementations:
-
+Examples:
 - PercentageDiscountStrategy
 - VipDiscountStrategy
 - CouponStrategy
 - BuyXGetYStrategy
 
-### Location
-
-`promotion/impl/*`
-
 ### Why
 
-New promotion types can be added without modifying existing implementations.
+Enables Open/Closed principle: new promotions can be added without modifying existing logic.
 
 ---
 
 ## Chain of Responsibility Pattern
 
-Promotion execution is implemented as a configurable promotion pipeline.
+Promotion execution is implemented as a configurable pipeline.
 
-Each promotion handler wraps a strategy and delegates processing to the next handler.
 ```text
 Percentage Discount
         ↓
 VIP Discount
         ↓
-Coupon
+Coupon Discount
         ↓
 Buy X Get Y
 ```
@@ -210,251 +208,106 @@ Spring injects implementations automatically.
 
 # 5. Database Design Decisions
 
-## orders
-
-Stores order-level information.
+## coupons (CONCURRENCY-SAFE DESIGN)
 
 | Column | Purpose |
-|----------|----------|
-| id | Order identifier |
-| customer_type | Customer classification |
-| subtotal | Total before discounts |
-| total_discount | Total discount |
-| final_price | Final payable amount |
-| created_at | Creation timestamp |
+|--------|--------|
+| code | primary key |
+| discount_amount | fixed discount |
+| active | enable/disable |
+| expiry_date | expiration |
+| usage_limit | max allowed redemptions |
+| used_count | current usage |
+| version | optimistic locking (metadata updates only) |
 
 ---
 
-## order_items
+## Key Concurrency Design
 
-Stores purchased products.
-
-| Column | Purpose |
-|----------|----------|
-| id | Item identifier |
-| order_id | Parent order |
-| sku | Product SKU |
-| price | Unit price |
-| quantity | Quantity ordered |
-
-Relationship:
-
-```text
-Order 1 ---- * OrderItem
-```
-
----
-
-## coupons
-
-Stores coupon definitions.
-
-| Column          | Purpose |
-|-----------------|----------|
-| code            | Coupon code |
-| discount_amount | Discount value |
-| active          | Active flag |
-| expiry date     | End date |
-
----
-
-## Design Choices
-
-### UUID Primary Keys
-
-Benefits:
-
-- Globally unique
-- Better support for distributed systems
-- Avoid predictable IDs
-
-### BigDecimal for Money
-
-Database:
+### Coupon usage is protected using ATOMIC UPDATE
 
 ```sql
-NUMERIC(19,2)
+UPDATE coupons
+SET used_count = used_count + 1
+WHERE code = ?
+  AND active = true
+  AND expiry_date > CURRENT_TIMESTAMP
+  AND (usage_limit IS NULL OR used_count < usage_limit);
 ```
 
-Java:
-
-```java
-BigDecimal
-```
-
-Prevents floating-point precision errors.
-
-### Liquibase
-
-Schema changes are managed using Liquibase migrations for versioned and repeatable deployments.
+✔ Ensures:
+- No double redemption
+- Multi-instance safety
+- No race condition
 
 ---
 
-# 6. How to Run the System
+## orders / order_items
 
-## Prerequisites
+Standard normalized design:
+- Order → OrderItems (1:N)
 
-- Java 17
-- Maven 3.5.3
-- Docker
-- Docker Compose
+---
 
-## Run Application
+## Optimistic Locking (@Version)
+
+Used for **administrative updates only (NOT coupon usage)**.
+
+It protects against:
+- concurrent promotion edits
+- lost updates in configuration changes
+
+---
+
+## Coupon Concurrency Strategy
+
+### Step 1 — Validate
+```java
+couponService.validateCoupon(code);
+```
+
+### Step 2 — Reserve atomically
+```java
+couponService.reserveCoupon(code);
+```
+
+---
+
+## 7. How to Run the System
 
 ```bash
 docker compose up --build
 ```
 
-Application:
-
-```text
-http://localhost:8080
-```
-
 ---
 
-# 7. How to Run the Tests
-
-Run unit tests:
+## 8. How to Run Tests
 
 ```bash
 mvn test
 ```
 
-Run integration tests:
+---
 
-```bash
-mvn verify
-```
+## 9. Trade-offs and What Happens at Scale
 
-Coverage includes:
+## Coupon Concurrency
+- Atomic DB update ensures safe redemption
+- Slight DB write overhead under high load
 
-- Promotion strategies
-- Order pricing service
-- Controller layer
-- Persistence layer
-- Integration scenarios
+## Promotion Engine
+- Linear execution cost based on number of rules
+
+## Optimistic Locking
+- May cause retry under concurrent admin updates
+
+## Scaling Strategy
+- Stateless services
+- Horizontal scaling supported
 
 ---
 
-# 8. Trade-offs and Future Improvements
-
-## Fixed Promotion Order
-
-Current implementation uses PromotionType ordering.
-
-Pros:
-
-- Predictable
-- Easy to test
-
-Cons:
-
-- Less flexible
-
-Future improvement:
-
-- Database-driven priority
-- Configuration-based ordering
-
----
-
-## In-Memory Promotion Processing
-
-Pros:
-
-- Simple implementation
-- Easy debugging
-
-Cons:
-
-- Less suitable for complex business rules
-
-Future improvement:
-
-- Dedicated rule engine
-- Dynamic rule configuration
-
----
-
-## Synchronous Processing
-
-Pros:
-
-- Simpler architecture
-
-Cons:
-
-- Increased latency under heavy load
-
-Future improvement:
-
-- Event-driven architecture
-- Async processing
-
----
-
-# 9. What Would Break at Scale and How to Fix It
-
-## Database Bottleneck
-
-Potential issues:
-
-- High write volume
-- Query contention
-
-Solutions:
-
-- Read replicas
-- Query optimization
-- Table partitioning
-- Connection pool tuning
-
----
-
-## Promotion Pipeline Growth
-
-Potential issue:
-
-- Increasing number of promotion rules increases processing time
-
-Solutions:
-
-- Cache promotion metadata
-- Rule indexing
-- Promotion pre-calculation
-
----
-
-## Concurrent Orders
-
-Potential issue:
-
-- Inventory inconsistencies
-
-Solutions:
-
-- Optimistic locking
-- Pessimistic locking
-- Distributed locking when required
-
----
-
-## Single Instance Deployment
-
-Potential issue:
-
-- Application becomes a bottleneck
-
-Solutions:
-
-- Horizontal scaling
-- Load balancing
-- Kubernetes deployment
-
----
-
-# Technologies Used
+## Technologies Used
 
 - Java 17
 - Spring Boot 3

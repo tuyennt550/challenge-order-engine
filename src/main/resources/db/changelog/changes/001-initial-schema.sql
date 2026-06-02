@@ -29,6 +29,8 @@ CREATE TABLE coupons (
      discount_amount NUMERIC(19,2) NOT NULL CHECK (discount_amount >= 0),
      active BOOLEAN NOT NULL DEFAULT TRUE,
      expiry_date TIMESTAMP NOT NULL,
+     usage_limit INT NOT NULL,
+     used_count INT NOT NULL DEFAULT 0,
      version BIGINT NOT NULL DEFAULT 0,
      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
      updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP

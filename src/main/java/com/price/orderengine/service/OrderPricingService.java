@@ -4,14 +4,11 @@ import com.price.orderengine.domain.model.OrderItemModel;
 import com.price.orderengine.dto.*;
 import com.price.orderengine.entity.Coupon;
 import com.price.orderengine.entity.Product;
-import com.price.orderengine.enums.PromotionType;
 import com.price.orderengine.errors.DBNotFoundException;
 import com.price.orderengine.errors.ErrorCode;
-import com.price.orderengine.errors.UserFriendlyException;
 import com.price.orderengine.promotion.PromotionContext;
 import com.price.orderengine.promotion.PromotionEngine;
 import com.price.orderengine.promotion.PromotionResult;
-import com.price.orderengine.repository.CouponRepository;
 import com.price.orderengine.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,12 +21,11 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class OrderPricingService {
-    private final CouponRepository couponRepository;
     private final ProductRepository productRepository;
     private final PromotionEngine promotionEngine;
     private final PromotionService promotionService;
+    private final CouponService couponService;
 
     public CalculateOrderResponse calculate(CalculateOrderRequest request) {
         Map<String, Product> productMap = validateProducts(request);
@@ -49,14 +45,9 @@ public class OrderPricingService {
          */
         Coupon coupon = null;
         if (request.getCouponCode() != null && !request.getCouponCode().isBlank()) {
-            coupon = couponRepository.findByCodeAndActiveTrue(request.getCouponCode()).orElse(null);
+            couponService.validateCoupon(request.getCouponCode());
 
-            if(coupon == null) {
-                throw new DBNotFoundException(ErrorCode.COUPON_NOT_FOUND, "Coupon not found: " + request.getCouponCode());
-            }
-            if(!coupon.isValid()) {
-                throw new UserFriendlyException(ErrorCode.INVALID_COUPON, "Invalid coupon: " + coupon.getCode());
-            }
+            coupon = couponService.reserveCoupon(request.getCouponCode());
         }
 
         /*
